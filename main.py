@@ -4,6 +4,8 @@ from discord.ext import commands
 from dotenv import load_dotenv
 import logging
 from googletrans import Translator
+from discord import Webhook
+import aiohttp
 
 load_dotenv()
 logger = logging.getLogger("discord")
@@ -30,8 +32,21 @@ async def on_message(message):
         logger.info(f"translation of {message.id} not needed")
         return
     else:
-        logger.info(f"message {message.id} translated")
-        await message.delete()
-        await message.channel.send(f"**{message.author.name}**\n{message.content}\n-# `{translated.src} -> en` {translated.text}")
+        wh_url = await message.channel.webhooks()
+        if wh_url == []:
+            logger.info(f"no webhooks for channel {message.channel.id}")
+            return
+        wh_url = wh_url[0].url
+
+        async with aiohttp.ClientSession() as session:
+            webhook = Webhook.from_url(wh_url, session=session)
+            if message.author.id != webhook.id:
+                logger.info(f"message {message.id} translated")
+                formatted = f"{message.content}\n-# `{translated.src} -> en` {translated.text}"
+                
+                await message.delete()
+                await webhook.send(formatted, username=message.author.name, avatar_url=message.author.avatar.url)
+            else:
+                logger.info(f"message {message.id} is from webhook")
 
 bot.run(token)
