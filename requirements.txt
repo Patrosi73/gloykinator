@@ -1,0 +1,4 @@
+discord
+requests
+python-dotenv
+googletrans==3.1.0a0
