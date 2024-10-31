@@ -8,23 +8,23 @@ from discord import Webhook
 import aiohttp
 import json
 
-if not os.path.exists("opted_out_users.json"):
-    opted_out_users_example = """{
-  "opted_out_users" : []
-}
-"""
-    with open ("opted_out_users.json", "w") as f:
-        f.write(opted_out_users_example)
-    print("opted out users json file created")
-
 load_dotenv()
 logger = logging.getLogger("discord")
+OPTED_OUT_USERS_FILE = "optedout.json"
 
 intents = discord.Intents(guilds=True, messages=True, message_content=True)
 bot = commands.Bot(command_prefix=commands.when_mentioned_or("!"), intents=intents)
 token = os.getenv("TOKEN")
+
 t = Translator()
 bad_pings = ("@everyone", "@here")
+try:
+    opted_out = json.load(
+        open(OPTED_OUT_USERS_FILE, "w+")
+    )
+except:
+    logger.info("optedout.json is non-existant or empty...")
+    opted_out = {"users": []}
 
 async def setup_hook() -> None:
     await bot.tree.sync()
@@ -39,11 +39,9 @@ async def on_message(message):
     if message.author == bot.user:
         logger.info(f"message {message.id} is from the bot itself")
         return
-    with open("opted_out_users.json", "r+") as f:
-        opt_out_list = json.load(f)
-        if message.author.id in opt_out_list["opted_out_users"]:
-            logger.info(f"message {message.id} is from an opted-out user")
-            return
+    elif message.author.id in opted_out["users"]:
+        logger.info(f"message {message.id} is from an opted-out user")
+        return
     
     logger.info(f"translating message {message.id}")
     message_text = message.content
@@ -75,37 +73,36 @@ async def on_message(message):
                 if message.reference is not None:
                     formatted = f"> {message.reference.resolved.jump_url}\n" + formatted
                 await message.delete()
-                await webhook.send(formatted, username=message.author.name, avatar_url=message.author.avatar.url)
+                await webhook.send(
+                    content=formatted,
+                    username=message.author.name,
+                    avatar_url=message.author.avatar.url
+                )
             else:
                 logger.info(f"message {message.id} is from webhook")
 
 @bot.tree.command(name="opt-out", description="Opts you out from automatic translation.")
 async def opt_out(interaction: discord.Interaction) -> None:
-    with open("opted_out_users.json", "r+") as f:
-        opt_out_list = json.load(f)
-        if interaction.user.id in opt_out_list["opted_out_users"]:
-            await interaction.response.send_message("You are already opted out.")
-        else:
-            opt_out_list["opted_out_users"].append(interaction.user.id)
-            f.seek(0)
-            f.truncate()
-            json.dump(opt_out_list, f)
-            await interaction.response.send_message("Opted out successfully.")
+    if interaction.user.id in opted_out["users"]:
+        await interaction.response.send_message("You are already opted out.")
+    else:
+        opted_out["users"].append(interaction.user.id)
+        json.dump(
+            obj=opted_out,
+            fp=open(OPTED_OUT_USERS_FILE, "w")
+        )
+        await interaction.response.send_message("Opted out successfully.")
 
 @bot.tree.command(name="opt-in", description="Opts you back into automatic translation.")
 async def opt_out(interaction: discord.Interaction) -> None:
-    with open("opted_out_users.json", "r+") as f:
-        opt_out_list = json.load(f)
-        if interaction.user.id in opt_out_list["opted_out_users"]:
-            opt_out_list["opted_out_users"].remove(interaction.user.id)
-            f.seek(0)
-            f.truncate()
-            json.dump(opt_out_list, f)
-            await interaction.response.send_message("Opted in successfully.")
-        else:
-            await interaction.response.send_message("You are currently opted in (default). Do `/opt-out` to opt out.")
-
-
-
+    if interaction.user.id in opted_out["users"]:
+        opted_out["users"].remove(interaction.user.id)
+        json.dump(
+            obj=opted_out,
+            fp=open(OPTED_OUT_USERS_FILE, "w")
+        )
+        await interaction.response.send_message("Opted in successfully.")
+    else:
+        await interaction.response.send_message("You are currently opted in (default). Do `/opt-out` to opt out.")
 
 bot.run(token)
