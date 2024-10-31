@@ -53,6 +53,8 @@ async def on_message(message):
             webhook = Webhook.from_url(wh_url, session=session)
             if message.author.id != webhook.id:
                 logger.info(f"message {message.id} translated")
+                if message.reference is not None:
+                    formatted = f"> {message.reference.resolved.jump_url}\n" + formatted
                 await message.delete()
                 await webhook.send(formatted, username=message.author.name, avatar_url=message.author.avatar.url)
             else:
