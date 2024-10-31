@@ -32,11 +32,14 @@ async def on_message(message):
         logger.info(f"translation of {message.id} not needed")
         return
     else:
+        formatted = f"{message.content}\n-# `{translated.src} -> en` {translated.text}"
+
         wh_url = await message.channel.webhooks()
         if wh_url == []:
             logger.info(f"no webhooks for channel {message.channel.id}")
+            formatted = "***psst!! i don't have a webhook to send to! create one in channel settings to make this look way nicer***\n\n" + formatted
             await message.delete()
-            await message.channel.send(f"***psst!! i don't have a webhook to send to! create one in channel settings to make this look way nicer***\n\n**{message.author.name}**\n{message.content}\n-# `{translated.src} -> en` {translated.text}")
+            await message.channel.send(formatted)
             return
         wh_url = wh_url[0].url
 
@@ -44,8 +47,6 @@ async def on_message(message):
             webhook = Webhook.from_url(wh_url, session=session)
             if message.author.id != webhook.id:
                 logger.info(f"message {message.id} translated")
-                formatted = f"{message.content}\n-# `{translated.src} -> en` {translated.text}"
-                
                 await message.delete()
                 await webhook.send(formatted, username=message.author.name, avatar_url=message.author.avatar.url)
             else:
