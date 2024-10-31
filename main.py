@@ -10,7 +10,7 @@ import aiohttp
 load_dotenv()
 logger = logging.getLogger("discord")
 
-intents = discord.Intents(guilds=True, messages=True, message_content=True, voice_states=True)
+intents = discord.Intents(guilds=True, messages=True, message_content=True)
 bot = commands.Bot(command_prefix=commands.when_mentioned_or("!"), intents=intents)
 token = os.getenv("TOKEN")
 t = Translator()
