@@ -36,7 +36,9 @@ async def on_message(message):
         if wh_url == []:
             logger.info(f"no webhooks for channel {message.channel.id}")
             await message.delete()
-            await message.channel.send(f"***psst!! i don't have a webhook to send to! create one in channel settings to make this look way nicer***\n\n**{message.author.name}**\n{message.content}\n-# `{translated.src} -> en` {translated.text}")
+            if os.getenv("IGNORE_NOWEBHOOK") == "1":
+                await message.channel.send(f"**{message.author.name}**\n{message.content}\n-# `{translated.src} -> en` {translated.text}")
+            else: await message.channel.send(f"***psst!! i don't have a webhook to send to! create one in channel settings to make this look way nicer***\n\n**{message.author.name}**\n{message.content}\n-# `{translated.src} -> en` {translated.text}")
             return
         wh_url = wh_url[0].url
 
