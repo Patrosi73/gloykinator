@@ -1,8 +1,6 @@
 import os
 import discord
 from discord.ext import commands
-import requests
-import json
 from dotenv import load_dotenv
 import logging
 from googletrans import Translator
@@ -32,7 +30,8 @@ async def on_message(message):
         logger.info(f"translation of {message.id} not needed")
         return
     else:
-        logger.info(f"message {message.id} translated, sending")
-        await message.channel.send(message.content + "\n-# `" + translated.src + " -> en` " + translated.text)
+        logger.info(f"message {message.id} translated")
+        await message.delete()
+        await message.channel.send(f"**{message.author.name}**\n{message.content}\n-# `{translated.src} -> en` {translated.text}")
 
 bot.run(token)
