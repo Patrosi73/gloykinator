@@ -20,7 +20,7 @@ t = Translator()
 bad_pings = ("@everyone", "@here")
 try:
     opted_out = json.load(
-        open(OPTED_OUT_USERS_FILE, "w+")
+        open(OPTED_OUT_USERS_FILE, "r+")
     )
 except:
     logger.info("optedout.json is non-existant or empty...")
