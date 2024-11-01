@@ -75,6 +75,7 @@ async def on_message(message):
                 formatted = f"{message_text}\n-# `{translated.src} -> en` {deeplx_translated["data"].replace(chr(10), chr(10)+'-# ')}"
             else:
                 logger.info(f"{message.id}: deeplx api returned status code {deeplx_translate.status_code}, falling back to gtranslate")
+                logger.info(f"{message.id}: deeplx api text output: {deeplx_translate.text}")
                 formatted = f"{message_text}\n-# `{translated.src} -> en` {translated.text.replace(chr(10), chr(10) + '-# ')}"
 
         # chr(10) returns the \n character, f-strings in python dont allow backslashes in the brace substitution parts
