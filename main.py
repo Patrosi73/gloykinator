@@ -54,7 +54,8 @@ async def on_message(message):
         logger.info(f"translation of {message.id} not needed")
         return
     else:
-        formatted = f"{message_text}\n-# `{translated.src} -> en` {translated.text}"
+        # chr(10) returns the \n character, f-strings in python dont allow backslashes in the brace substitution parts
+        formatted = f"{message_text}\n-# `{translated.src} -> en` {translated.text.replace(chr(10), chr(10)+'-# ')}"
 
         wh_url = await message.channel.webhooks()
         if wh_url == []:
