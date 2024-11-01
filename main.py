@@ -81,7 +81,7 @@ async def on_message(message):
             if message.author.id != webhook.id:
                 logger.info(f"message {message.id} translated")
                 if message.reference is not None:
-                    mentioned = f" ({message.reference.resolved.author.mention})" if message.reference.resolved.author in message.mentions else ""
+                    mentioned = f" {message.reference.resolved.author.mention}" if message.reference.resolved.author in message.mentions else ""
                     formatted = f"> {message.reference.resolved.jump_url}{mentioned}\n" + formatted
                 await message.delete()
                 await webhook.send(
