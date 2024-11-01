@@ -7,6 +7,7 @@ from googletrans import Translator
 from discord import Webhook
 import aiohttp
 import json
+import re
 
 load_dotenv()
 logger = logging.getLogger("discord")
@@ -18,6 +19,7 @@ token = os.getenv("TOKEN")
 
 t = Translator()
 bad_pings = ("@everyone", "@here")
+tg_regex = r"^\*\*.*\*\*\\n"
 try:
     opted_out = json.load(
         open(OPTED_OUT_USERS_FILE, "r+")
@@ -48,7 +50,14 @@ async def on_message(message):
     for i in bad_pings:
         message_text = message_text.replace(i, "")
     
-    translated = t.translate(message_text, dest='en')
+    translated = t.translate(
+        text=re.sub(
+            pattern=tg_regex,
+            repl='',
+            string=message_text
+        ),
+        dest='en'
+    )
 
     if translated.src == "en":
         logger.info(f"translation of {message.id} not needed")
