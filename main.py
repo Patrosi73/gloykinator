@@ -11,11 +11,15 @@ import re
 import requests
 
 load_dotenv()
+token = os.getenv("TOKEN")
+dlx_url = os.getenv("DEEPLX_API")
+use_dlx = int(os.getenv("USE_DEEPLX"))
+
 logger = logging.getLogger("discord")
+
 OPTED_OUT_USERS_FILE = "optedout.json"
 intents = discord.Intents(guilds=True, messages=True, message_content=True)
 bot = commands.Bot(command_prefix=commands.when_mentioned_or("!"), intents=intents)
-token = os.getenv("TOKEN")
 
 t = Translator()
 bad_pings = ("@everyone", "@here")
@@ -50,7 +54,7 @@ async def on_message(message):
     for i in bad_pings:
         message_text = message_text.replace(i, "")
     
-    translated = t.translate(
+    gtranslated = t.translate(
         text=re.sub(
             pattern=tg_regex,
             repl='',
@@ -59,53 +63,51 @@ async def on_message(message):
         dest='en'
     )
 
-    if translated.src == "en":
+    if gtranslated.src == "en":
         logger.info(f"translation of {message.id} not needed")
         return
-    else:
-        if os.getenv("USE_DEEPLX") == "1":
-            data = {
-                "text": message_text,
-                "source_lang": translated.src
-            }
-            post_data = json.dumps(data)
-            deeplx_translate = requests.post(os.getenv("DEEPLX_API"), post_data)
-            if deeplx_translate.status_code == 200:
-                deeplx_translated = json.loads(deeplx_translate.text)
-                formatted = f"{message_text}\n-# `{translated.src} -> en` {deeplx_translated["data"].replace(chr(10), chr(10)+'-# ')}"
-            else:
-                logger.info(f"{message.id}: deeplx api returned status code {deeplx_translate.status_code}, falling back to gtranslate")
-                logger.info(f"{message.id}: deeplx api text output: {deeplx_translate.text}")
-                formatted = f"{message_text}\n-# `{translated.src} -> en` {translated.text.replace(chr(10), chr(10) + '-# ')}"
 
-        # chr(10) returns the \n character, f-strings in python dont allow backslashes in the brace substitution parts
-        else: formatted = f"{message_text}\n-# `{translated.src} -> en` {translated.text.replace(chr(10), chr(10)+'-# ')}"
+    translated = gtranslated.text
+    if use_dlx:
+        data = {
+            "text": message_text,
+            "source_lang": gtranslated.src
+        }
+        deeplx_translate = requests.post(dlx_url, json.dumps(data))
+        if deeplx_translate.status_code == 200:
+            translated = json.loads(deeplx_translate.text)["data"]
+        else:
+            logger.info(f"{message.id}: deeplx api returned status code {deeplx_translate.status_code}, falling back to gtranslate")
+            logger.info(f"{message.id}: deeplx api text output: {deeplx_translate.text}")
 
-        wh_url = await message.channel.webhooks()
-        if wh_url == []:
-            logger.info(f"{message.id}: no webhooks for channel {message.channel.id}")
+    # chr(10) returns the \n character, f-strings in python dont allow backslashes in the brace substitution parts
+    formatted = f"{message_text}\n-# `{gtranslated.src} -> en` {translated.replace(chr(10), chr(10)+'-# ')}"
+
+    wh_url = await message.channel.webhooks()
+    if wh_url == []:
+        logger.info(f"{message.id}: no webhooks for channel {message.channel.id}")
+        await message.delete()
+        if os.getenv("IGNORE_NOWEBHOOK") == "1":
+            formatted = "***psst!! i don't have a webhook to send to! create one in channel settings to make this look way nicer***\n\n" + formatted
+            await message.channel.send(formatted)
+        return
+    wh_url = wh_url[0].url
+
+    async with aiohttp.ClientSession() as session:
+        webhook = Webhook.from_url(wh_url, session=session)
+        if message.author.id != webhook.id:
+            logger.info(f"message {message.id} translated")
+            if message.reference is not None:
+                mentioned = f" {message.reference.resolved.author.mention}" if message.reference.resolved.author in message.mentions else ""
+                formatted = f"> {message.reference.resolved.jump_url}{mentioned}\n" + formatted
             await message.delete()
-            if os.getenv("IGNORE_NOWEBHOOK") == "1":
-                formatted = "***psst!! i don't have a webhook to send to! create one in channel settings to make this look way nicer***\n\n" + formatted
-                await message.channel.send(formatted)
-            return
-        wh_url = wh_url[0].url
-
-        async with aiohttp.ClientSession() as session:
-            webhook = Webhook.from_url(wh_url, session=session)
-            if message.author.id != webhook.id:
-                logger.info(f"message {message.id} translated")
-                if message.reference is not None:
-                    mentioned = f" {message.reference.resolved.author.mention}" if message.reference.resolved.author in message.mentions else ""
-                    formatted = f"> {message.reference.resolved.jump_url}{mentioned}\n" + formatted
-                await message.delete()
-                await webhook.send(
-                    content=formatted,
-                    username=message.author.name,
-                    avatar_url=message.author.avatar.url
-                )
-            else:
-                logger.info(f"message {message.id} is from webhook")
+            await webhook.send(
+                content=formatted,
+                username=message.author.name,
+                avatar_url=message.author.avatar.url
+            )
+        else:
+            logger.info(f"message {message.id} is from webhook")
 
 @bot.tree.command(name="opt-out", description="Opts you out from automatic translation.")
 async def opt_out(interaction: discord.Interaction) -> None:
