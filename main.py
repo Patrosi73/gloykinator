@@ -7,6 +7,7 @@ from googletrans import Translator
 from discord import Webhook
 import aiohttp
 import json
+import re
 
 load_dotenv()
 logger = logging.getLogger("discord")
@@ -18,6 +19,7 @@ token = os.getenv("TOKEN")
 
 t = Translator()
 bad_pings = ("@everyone", "@here")
+tg_regex = r"^\*\*.*\*\*\\n"
 try:
     opted_out = json.load(
         open(OPTED_OUT_USERS_FILE, "r+")
@@ -48,13 +50,21 @@ async def on_message(message):
     for i in bad_pings:
         message_text = message_text.replace(i, "")
     
-    translated = t.translate(message_text, dest='en')
+    translated = t.translate(
+        text=re.sub(
+            pattern=tg_regex,
+            repl='',
+            string=message_text
+        ),
+        dest='en'
+    )
 
     if translated.src == "en":
         logger.info(f"translation of {message.id} not needed")
         return
     else:
-        formatted = f"{message_text}\n-# `{translated.src} -> en` {translated.text}"
+        # chr(10) returns the \n character, f-strings in python dont allow backslashes in the brace substitution parts
+        formatted = f"{message_text}\n-# `{translated.src} -> en` {translated.text.replace(chr(10), chr(10)+'-# ')}"
 
         wh_url = await message.channel.webhooks()
         if wh_url == []:
@@ -71,7 +81,8 @@ async def on_message(message):
             if message.author.id != webhook.id:
                 logger.info(f"message {message.id} translated")
                 if message.reference is not None:
-                    formatted = f"> {message.reference.resolved.jump_url}\n" + formatted
+                    mentioned = f" ({message.reference.resolved.author.mention})" if message.reference.resolved.author in message.mentions else ""
+                    formatted = f"> {message.reference.resolved.jump_url}{mentioned}\n" + formatted
                 await message.delete()
                 await webhook.send(
                     content=formatted,
