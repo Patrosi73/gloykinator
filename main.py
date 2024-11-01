@@ -8,11 +8,11 @@ from discord import Webhook
 import aiohttp
 import json
 import re
+import requests
 
 load_dotenv()
 logger = logging.getLogger("discord")
 OPTED_OUT_USERS_FILE = "optedout.json"
-
 intents = discord.Intents(guilds=True, messages=True, message_content=True)
 bot = commands.Bot(command_prefix=commands.when_mentioned_or("!"), intents=intents)
 token = os.getenv("TOKEN")
@@ -63,12 +63,26 @@ async def on_message(message):
         logger.info(f"translation of {message.id} not needed")
         return
     else:
+        if os.getenv("USE_DEEPLX") == "1":
+            data = {
+                "text": message_text,
+                "source_lang": translated.src
+            }
+            post_data = json.dumps(data)
+            deeplx_translate = requests.post(os.getenv("DEEPLX_API"), post_data)
+            if deeplx_translate.status_code == 200:
+                deeplx_translated = json.loads(deeplx_translate.text)
+                formatted = f"{message_text}\n-# `{translated.src} -> en` {deeplx_translated["data"].replace(chr(10), chr(10)+'-# ')}"
+            else:
+                logger.info(f"{message.id}: deeplx api returned status code {deeplx_translate.status_code}, falling back to gtranslate")
+                formatted = f"{message_text}\n-# `{translated.src} -> en` {translated.text.replace(chr(10), chr(10) + '-# ')}"
+
         # chr(10) returns the \n character, f-strings in python dont allow backslashes in the brace substitution parts
-        formatted = f"{message_text}\n-# `{translated.src} -> en` {translated.text.replace(chr(10), chr(10)+'-# ')}"
+        else: formatted = f"{message_text}\n-# `{translated.src} -> en` {translated.text.replace(chr(10), chr(10)+'-# ')}"
 
         wh_url = await message.channel.webhooks()
         if wh_url == []:
-            logger.info(f"no webhooks for channel {message.channel.id}")
+            logger.info(f"{message.id}: no webhooks for channel {message.channel.id}")
             await message.delete()
             if os.getenv("IGNORE_NOWEBHOOK") == "1":
                 formatted = "***psst!! i don't have a webhook to send to! create one in channel settings to make this look way nicer***\n\n" + formatted
