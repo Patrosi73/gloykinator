@@ -15,11 +15,14 @@ a very shitty discord automatic translation bot
 # deepl support (via DeeplX)
 > [!IMPORTANT]
 > this is very unstable and will likely hit a rate-limit after just a few translated messages in a short span of time.
-> if a rate-limit is encountered the bot will fall back to google translate
+> 
+> if a rate-limit is encountered the bot will fall back to google translate.
+> 
 > official api support maybe sometime in the future
 
 > [!NOTE]
 > this will still send messages to Google for source language detection as the deepl one is very spotty.
+> 
 > nothing i can do about that unfortunately :(
 
 ## setup
