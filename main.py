@@ -9,6 +9,7 @@ import aiohttp
 import json
 import re
 import requests
+import io
 
 load_dotenv()
 token = os.getenv("TOKEN")
@@ -92,25 +93,29 @@ async def on_message(message):
 
     async with aiohttp.ClientSession() as session:
         webhook = Webhook.from_url(wh_url, session=session)
-        attachment = discord.utils.MISSING
+        # if you set it to MISSING it wont do anything since thats the default variable definition in the function itself
+        attachments = discord.utils.MISSING
 
         if message.author.id != webhook.id:
             logger.info(f"message {message.id} translated")
             if message.reference is not None:
                 mentioned = f" {message.reference.resolved.author.mention}" if message.reference.resolved.author in message.mentions else ""
                 formatted = f"> {message.reference.resolved.jump_url}{mentioned}\n" + formatted
+            
             if message.attachments != []:
+                attachments = []
                 for attachment in message.attachments:
-                    await attachment.save(attachment.filename)
-                    attachment = discord.File(attachment.filename, attachment.filename)
+                    attachment_fp = io.BytesIO()
+                    await attachment.save(attachment_fp)
+                    attachments.append(discord.File(attachment_fp, attachment.filename))
+            
             await message.delete()
             await webhook.send(
                 content=formatted,
                 username=message.author.name,
                 avatar_url=message.author.avatar.url,
-                file=attachment
+                files=attachments
             )
-            os.remove(attachment.filename)
         else:
             logger.info(f"message {message.id} is from webhook")
 
