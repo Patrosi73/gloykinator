@@ -92,35 +92,25 @@ async def on_message(message):
 
     async with aiohttp.ClientSession() as session:
         webhook = Webhook.from_url(wh_url, session=session)
+        attachment = discord.utils.MISSING
+
         if message.author.id != webhook.id:
             logger.info(f"message {message.id} translated")
             if message.reference is not None:
                 mentioned = f" {message.reference.resolved.author.mention}" if message.reference.resolved.author in message.mentions else ""
                 formatted = f"> {message.reference.resolved.jump_url}{mentioned}\n" + formatted
-                await message.delete()
-                await webhook.send(
-                    content=formatted,
-                    username=message.author.name,
-                    avatar_url=message.author.avatar.url
-                )
-            if message.attachments is not None:
+            if message.attachments != []:
                 for attachment in message.attachments:
                     await attachment.save(attachment.filename)
-                    await message.delete()
-                    await webhook.send(
-                        content=formatted,
-                        username=message.author.name,
-                        avatar_url=message.author.avatar.url,
-                        file=discord.File(attachment.filename, attachment.filename),
-                    )
-                    os.remove(attachment.filename)
-            else:
-                await message.delete()
-                await webhook.send(
-                    content=formatted,
-                    username=message.author.name,
-                    avatar_url=message.author.avatar.url
-                )
+                    attachment = discord.File(attachment.filename, attachment.filename)
+            await message.delete()
+            await webhook.send(
+                content=formatted,
+                username=message.author.name,
+                avatar_url=message.author.avatar.url,
+                file=attachment
+            )
+            os.remove(attachment.filename)
         else:
             logger.info(f"message {message.id} is from webhook")
 
