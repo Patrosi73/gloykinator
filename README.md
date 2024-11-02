@@ -1,7 +1,7 @@
 # gloykinator
 a very shitty discord automatic translation bot
 
-![image](https://github.com/user-attachments/assets/384fd7bd-d067-4c35-8fc6-7e4972fde143)
+![image](https://github.com/user-attachments/assets/eb3a0578-6369-4c7d-8b47-9ec53ec55eee)
 
 # setup
 - create a bot and invite to server
