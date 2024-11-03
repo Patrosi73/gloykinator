@@ -44,13 +44,13 @@ async def on_ready():
 @bot.event
 async def on_message(message):
     if message.author == bot.user:
-        logger.info(f"message {message.id} is from the bot itself")
+        logger.info(f"{message.id}: is from the bot itself")
         return
     elif message.author.id in opted_out["users"]:
-        logger.info(f"message {message.id} is from an opted-out user")
+        logger.info(f"{message.id}: is from an opted-out user")
         return
     
-    logger.info(f"translating message {message.id}")
+    logger.info(f"{message.id}: translating")
     message_text = message.content
     for i in bad_pings:
         message_text = message_text.replace(i, "")
@@ -65,7 +65,7 @@ async def on_message(message):
     )
 
     if gtranslated.src == "en":
-        logger.info(f"translation of {message.id} not needed")
+        logger.info(f"{message.id}: translation not needed")
         return
 
     translated = gtranslated.text
@@ -97,7 +97,7 @@ async def on_message(message):
         attachments = discord.utils.MISSING
 
         if message.author.id != webhook.id:
-            logger.info(f"message {message.id} translated")
+            logger.info(f"{message.id}: translated")
             if message.reference is not None:
                 mentioned = f" {message.reference.resolved.author.mention}" if message.reference.resolved.author in message.mentions else ""
                 formatted = f"> {message.reference.resolved.jump_url}{mentioned}\n" + formatted
@@ -117,7 +117,7 @@ async def on_message(message):
                 files=attachments
             )
         else:
-            logger.info(f"message {message.id} is from webhook")
+            logger.info(f"{message.id}: is from webhook")
 
 @bot.tree.command(name="opt-out", description="Opts you out from automatic translation.")
 async def opt_out(interaction: discord.Interaction) -> None:
