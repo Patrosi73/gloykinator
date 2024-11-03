@@ -24,7 +24,7 @@ bot = commands.Bot(command_prefix=commands.when_mentioned_or("!"), intents=inten
 
 t = Translator()
 bad_pings = ("@everyone", "@here")
-tg_regex = r"^\*\*.*\*\*\n"
+tg_regex = r"(^\*\*.*\*\*(?:\(.*\))?)(?:\)\n)?"
 try:
     opted_out = json.load(
         open(OPTED_OUT_USERS_FILE, "r+")
