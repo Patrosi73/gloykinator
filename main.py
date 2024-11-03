@@ -87,8 +87,8 @@ async def on_message(message):
     wh_url = await message.channel.webhooks()
     if wh_url == []:
         logger.info(f"{message.id}: no webhooks for channel {message.channel.id} - automatically creating one")
-        await message.channel.create_webhook(name="gloykinator translation webhook")
-        wh_url = await message.channel.webhooks()
+        # wrapping in array to mimic the output of message.channe.webhooks()
+        wh_url = [await message.channel.create_webhook(name="gloykinator translation webhook")]
     wh_url = wh_url[0].url
 
     async with aiohttp.ClientSession() as session:
