@@ -94,7 +94,7 @@ async def on_message(message):
                 logger.info(f"{message.id}: deeplx api returned status code {deeplx_translate.status_code}, falling back to gtranslate")
                 logger.info(f"{message.id}: deeplx api text output: {deeplx_translate.text}")
 
-            if translated == message_text.capitalize():
+            if translated == message_text or translated == message_text.capitalize():
                 logger.info(f"{message.id}: translation not needed")
                 return
 
