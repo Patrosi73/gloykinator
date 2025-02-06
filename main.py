@@ -25,6 +25,8 @@ bot = commands.Bot(command_prefix=commands.when_mentioned_or("!"), intents=inten
 t = Translator()
 bad_pings = ("@everyone", "@here")
 tg_regex = r"(^\*\*.*\*\*(?:\(.*\))?)(?:\)\n)?"
+emoji_regex = r"<:[A-Za-z0-9]+:[0-9]+>"
+both_regex = tg_regex + "|" + emoji_regex
 try:
     opted_out = json.load(
         open(OPTED_OUT_USERS_FILE, "r+")
@@ -70,7 +72,7 @@ async def on_message(message):
     
             gtranslated = t.translate(
                 text=re.sub(
-                    pattern=tg_regex,
+                    pattern=both_regex, # both tg and emoji
                     repl='',
                     string=message_text
                 ),
