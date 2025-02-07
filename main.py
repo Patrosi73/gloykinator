@@ -96,6 +96,10 @@ async def on_message(message):
                 logger.info(f"{message.id}: deeplx api returned status code {deeplx_translate.status_code}, falling back to gtranslate")
                 logger.info(f"{message.id}: deeplx api text output: {deeplx_translate.text}")
 
+            if translated == message_text or translated == message_text.capitalize():
+                logger.info(f"{message.id}: translation not needed")
+                return
+
             # chr(10) returns the \n character, f-strings in python dont allow backslashes in the brace substitution parts
             formatted = f"{message_text}\n-# `{gtranslated.src} -> en` {translated.replace(chr(10), chr(10)+'-# ')}"
 
